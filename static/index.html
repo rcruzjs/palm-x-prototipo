@@ -7,110 +7,253 @@
 <style>
   :root {
     --bg: #f4f1ea; --surface: #fffdf8; --ink: #1d2320; --muted: #66706a;
-    --line: #dcd6c8; --accent: #0d6b57; --accent-ink: #ffffff;
+    --line: #dcd6c8; --accent: #0d6b57; --accent-ink: #ffffff; --accent-soft: #dff1ea;
     --ok: #0d6b57; --ok-bg: #dff1ea; --bad: #a3321f; --bad-bg: #f9e2dc;
     --warn: #7a5a00; --warn-bg: #f8ecc6;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #121614; --surface: #1b211e; --ink: #ecefe9; --muted: #9aa59e;
-      --line: #2f3833; --accent: #49c2a3; --accent-ink: #06231c;
+      --line: #2f3833; --accent: #49c2a3; --accent-ink: #06231c; --accent-soft: #14342b;
       --ok: #6bd6b8; --ok-bg: #14342b; --bad: #f29a88; --bad-bg: #3d1c15;
       --warn: #ecc967; --warn-bg: #3a2f0d;
     }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
     font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     padding: 20px 16px calc(32px + env(safe-area-inset-bottom));
   }
   main { max-width: 480px; margin: 0 auto; display: grid; gap: 16px; }
-  header h1 { font-size: 1.5rem; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h1 { font-size: 1.5rem; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
   header p { margin: 0; color: var(--muted); font-size: 0.95rem; }
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
-  .card h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px; }
+  .card h2, .eyebrow { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px; font-weight: 700; }
   label.field { display: grid; gap: 6px; font-weight: 600; font-size: 0.95rem; }
   input[type=text] {
     font: inherit; padding: 12px; border-radius: 10px; border: 1px solid var(--line);
     background: var(--bg); color: var(--ink); width: 100%;
   }
-  input:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  input[aria-invalid=true] { border-color: var(--bad); }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   .hint { font-size: 0.85rem; color: var(--muted); margin: 6px 0 0; }
-  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9rem; }
-  .consent input { width: 22px; height: 22px; margin: 2px 0 0; flex: none; accent-color: var(--accent); }
+  .field-error { font-size: 0.85rem; color: var(--bad); margin: 6px 0 0; min-height: 1.3em; }
+  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 0.95rem; font-weight: 600; }
+  .consent input { width: 24px; height: 24px; margin: 0; flex: none; accent-color: var(--accent); }
   .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stack { display: grid; gap: 10px; }
   button {
-    font: inherit; font-weight: 600; min-height: 48px; padding: 10px 12px; border-radius: 10px;
+    font: inherit; font-weight: 600; min-height: 50px; padding: 10px 12px; border-radius: 12px;
     border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
   }
   button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   button.danger { color: var(--bad); }
+  button.link { border: 0; background: none; color: var(--muted); min-height: 44px; text-decoration: underline; }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
-  #status { border-radius: 14px; padding: 14px 16px; border: 1px solid var(--line); background: var(--surface); }
-  #status[data-kind=ok] { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
-  #status[data-kind=bad] { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
-  #status[data-kind=warn] { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
-  #status strong { display: block; font-size: 1.05rem; }
-  #status span { font-size: 0.9rem; }
+  .notice { border-radius: 14px; padding: 14px 16px; border: 1px solid var(--line); background: var(--surface); }
+  .notice[data-kind=ok] { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+  .notice[data-kind=bad] { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+  .notice[data-kind=warn] { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
+  .notice strong { display: block; font-size: 1.05rem; }
+  .notice span { font-size: 0.9rem; }
   .palms { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .palm { border: 1px dashed var(--line); border-radius: 10px; padding: 10px; font-size: 0.9rem; }
   .palm b { display: block; }
   .palm[data-on=true] { border-style: solid; border-color: var(--ok); }
   details { font-size: 0.85rem; color: var(--muted); }
   pre { white-space: pre-wrap; word-break: break-word; font-size: 0.8rem; margin: 8px 0 0; }
+
+  /* ---- assistente de cadastro ---- */
+  .wz-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .wz-top span { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+  .progress { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 25%; background: var(--accent); transition: width .25s ease; }
+  .step h2 { font-size: 1.35rem; line-height: 1.25; margin: 0 0 6px; letter-spacing: -0.01em; text-transform: none; color: var(--ink); }
+  .step h2:focus { outline: none; }
+  .step > p.lead { margin: 0 0 14px; color: var(--muted); }
+  .facts { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
+  .facts li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; font-size: 0.95rem; }
+  .facts li b { display: block; }
+  .facts svg { width: 24px; height: 24px; color: var(--accent); margin-top: 2px; }
+  .hands { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .hand {
+    display: grid; justify-items: center; gap: 6px; padding: 16px 8px; min-height: 150px;
+    border: 2px solid var(--line); border-radius: 14px; background: var(--surface);
+  }
+  .hand svg { width: 64px; height: 76px; color: var(--muted); }
+  .hand small { font-weight: 500; color: var(--muted); font-size: 0.8rem; }
+  .hand[aria-pressed=true] { border-color: var(--accent); background: var(--accent-soft); }
+  .hand[aria-pressed=true] svg { color: var(--accent); }
+  .hand.flip svg { transform: scaleX(-1); }
+  .illus { display: grid; place-items: center; padding: 8px 0 14px; }
+  .illus svg { width: 150px; height: 170px; color: var(--accent); }
+  .scan { animation: scan 2.4s ease-in-out infinite; }
+  @keyframes scan { 0%,100% { transform: translateY(0); } 50% { transform: translateY(74px); } }
+  .checks { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; font-size: 0.9rem; }
+  .checks li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; }
+  .checks li::before { content: "•"; font-weight: 700; text-align: center; color: var(--muted); }
+  .checks li[data-s=ok]::before { content: "✓"; color: var(--ok); }
+  .checks li[data-s=bad]::before { content: "✕"; color: var(--bad); }
+  .checks li[data-s=warn]::before { content: "!"; color: var(--warn); }
+  .checks li[data-s=bad] { color: var(--bad); }
+  .result-icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; margin: 4px auto 12px; }
+  .result-icon svg { width: 38px; height: 38px; }
+  .result-icon.ok { background: var(--ok-bg); color: var(--ok); animation: pop .35s ease-out; }
+  .result-icon.bad { background: var(--bad-bg); color: var(--bad); }
+  .result-icon.wait { background: var(--accent-soft); color: var(--accent); }
+  .result-icon.wait svg { animation: spin 1s linear infinite; }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .center { text-align: center; }
+  .tips { margin: 0 0 14px; padding-left: 20px; font-size: 0.95rem; display: grid; gap: 6px; }
+  @media (prefers-reduced-motion: reduce) { .scan, .result-icon.ok, .result-icon.wait svg, .progress i { animation: none; transition: none; } }
 </style>
 </head>
 <body>
 <main>
-  <header>
-    <h1>Biometria por palma</h1>
-    <p>Protótipo de cadastro e verificação com Tencent Palm X.</p>
-  </header>
+  <!-- ================= INÍCIO ================= -->
+  <div id="home" class="stack" style="gap:16px">
+    <header>
+      <h1>Biometria por palma</h1>
+      <p>Protótipo de cadastro e verificação com Tencent Palm X.</p>
+    </header>
 
-  <section class="card">
-    <h2>Titular</h2>
-    <label class="field">Identificador do usuário
-      <input id="userId" type="text" inputmode="text" autocomplete="off" autocapitalize="none"
-             placeholder="ex.: socio-00123" maxlength="64">
-    </label>
-    <p class="hint">Letras, dígitos, “-” e “_”. Use um código interno, não CPF nem nome.
-      Para <b>verificar</b>, pode deixar em branco: a própria palma identifica o usuário.</p>
-  </section>
+    <section class="card">
+      <h2>Titular</h2>
+      <label class="field">Identificador do usuário
+        <input id="userId" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"
+               placeholder="ex.: socio-00123" maxlength="64">
+      </label>
+      <p class="hint">Para <b>verificar</b>, pode deixar em branco: a própria palma identifica o usuário.</p>
+    </section>
 
-  <section class="card">
-    <h2>Consentimento</h2>
-    <label class="consent">
-      <input id="consent" type="checkbox">
-      <span>Autorizo a coleta da imagem da palma da minha mão para fins de identificação
-        biométrica neste protótipo. Sei que posso excluir esse dado a qualquer momento
-        pelo botão “Excluir palmas”.</span>
-    </label>
-  </section>
+    <section class="actions">
+      <button id="btnRegister" class="primary">Cadastrar palma</button>
+      <button id="btnVerify" class="primary">Verificar palma</button>
+      <button id="btnStatus">Consultar cadastro</button>
+      <button id="btnDelete" class="danger">Excluir palmas</button>
+    </section>
 
-  <section class="actions">
-    <button id="btnRegister" class="primary">Cadastrar palma</button>
-    <button id="btnVerify" class="primary">Verificar palma</button>
-    <button id="btnStatus">Consultar cadastro</button>
-    <button id="btnDelete" class="danger">Excluir palmas</button>
-  </section>
+    <div id="status" class="notice" role="status" aria-live="polite" data-kind="info">
+      <strong>Pronto</strong><span>Escolha uma ação.</span>
+    </div>
 
-  <div id="status" role="status" aria-live="polite" data-kind="info">
-    <strong>Pronto</strong><span>Informe o identificador e escolha uma ação.</span>
+    <section class="card" id="palmsCard" hidden>
+      <h2>Palmas cadastradas</h2>
+      <div class="palms">
+        <div class="palm" id="palmLeft"><b>Esquerda</b><span>—</span></div>
+        <div class="palm" id="palmRight"><b>Direita</b><span>—</span></div>
+      </div>
+    </section>
+
+    <details>
+      <summary>Detalhes técnicos da última operação</summary>
+      <pre id="debug">—</pre>
+    </details>
   </div>
 
-  <section class="card" id="palmsCard" hidden>
-    <h2>Palmas cadastradas</h2>
-    <div class="palms">
-      <div class="palm" id="palmLeft"><b>Esquerda</b><span>—</span></div>
-      <div class="palm" id="palmRight"><b>Direita</b><span>—</span></div>
+  <!-- ================= ASSISTENTE DE CADASTRO ================= -->
+  <section id="wizard" class="stack" style="gap:16px" hidden aria-label="Cadastro de palma">
+    <div class="stack" id="wzHead">
+      <div class="wz-top">
+        <span id="wzCount">Passo 1 de 4</span>
+        <button class="link" id="wzCancel" type="button">Cancelar</button>
+      </div>
+      <div class="progress" aria-hidden="true"><i id="wzBar"></i></div>
+    </div>
+
+    <!-- 1. identificador -->
+    <div class="step card" data-step="1">
+      <h2 tabindex="-1">Quem vai cadastrar a palma?</h2>
+      <p class="lead">Informe o código interno da pessoa. Ele liga a palma ao cadastro dela.</p>
+      <label class="field">Identificador do usuário
+        <input id="wzUser" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"
+               placeholder="ex.: socio-00123" maxlength="64" aria-describedby="wzUserErr">
+      </label>
+      <p class="field-error" id="wzUserErr" role="alert"></p>
+      <p class="hint" style="margin-bottom:14px">Letras, dígitos, “-” e “_”. Não use CPF nem nome.</p>
+      <button class="primary" id="wzNext1" type="button" style="width:100%">Continuar</button>
+    </div>
+
+    <!-- 2. consentimento -->
+    <div class="step card" data-step="2" hidden>
+      <h2 tabindex="-1">Antes de usar a câmera</h2>
+      <p class="lead">A palma da mão é um dado biométrico. Veja o que acontece com ele.</p>
+      <ul class="facts">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>
+          <span><b>O que é coletado</b>Imagens e um vídeo curto da palma, usados para confirmar que é uma mão real.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+          <span><b>Para quê</b>Somente para identificar você pela palma neste protótipo.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>
+          <span><b>Onde é processado</b>Nos servidores da Tencent (Palm X), fora do Brasil.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+          <span><b>Como apagar</b>A qualquer momento, pelo botão “Excluir palmas” na tela inicial.</span></li>
+      </ul>
+      <label class="consent" style="margin-bottom:14px">
+        <input id="wzConsent" type="checkbox">
+        <span>Li e autorizo a coleta da palma da minha mão.</span>
+      </label>
+      <div class="stack">
+        <button class="primary" id="wzNext2" type="button" disabled>Autorizar e continuar</button>
+        <button id="wzBack2" type="button">Voltar</button>
+      </div>
+    </div>
+
+    <!-- 3. escolha da mão -->
+    <div class="step card" data-step="3" hidden>
+      <h2 tabindex="-1">Qual mão você vai cadastrar?</h2>
+      <p class="lead">Escolha a mão que você costuma ter livre. Dá para cadastrar a outra depois.</p>
+      <div class="hands" role="group" aria-label="Mão a cadastrar">
+        <button class="hand" type="button" data-hand="left" aria-pressed="false">
+          <svg viewBox="0 0 64 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 40V14a4 4 0 018 0v20M28 32V8a4 4 0 018 0v24M36 32V12a4 4 0 018 0v24M44 36V22a4 4 0 018 0v26c0 14-8 24-20 24-9 0-14-5-19-14l-7-13a4 4 0 017-4l7 9"/></svg>
+          <b>Esquerda</b><small data-note></small>
+        </button>
+        <button class="hand flip" type="button" data-hand="right" aria-pressed="false">
+          <svg viewBox="0 0 64 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 40V14a4 4 0 018 0v20M28 32V8a4 4 0 018 0v24M36 32V12a4 4 0 018 0v24M44 36V22a4 4 0 018 0v26c0 14-8 24-20 24-9 0-14-5-19-14l-7-13a4 4 0 017-4l7 9"/></svg>
+          <b>Direita</b><small data-note></small>
+        </button>
+      </div>
+      <div class="stack">
+        <button class="primary" id="wzNext3" type="button" disabled>Continuar</button>
+        <button id="wzBack3" type="button">Voltar</button>
+      </div>
+    </div>
+
+    <!-- 4. preparação -->
+    <div class="step card" data-step="4" hidden>
+      <h2 tabindex="-1" id="wzPrepTitle">Prepare a mão</h2>
+      <p class="lead">Leva cerca de 30 segundos. Siga a moldura que vai aparecer na tela.</p>
+      <div class="illus" aria-hidden="true">
+        <svg viewBox="0 0 150 170" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="25" y="5" width="100" height="160" rx="14"/>
+          <g transform="translate(43 42)" opacity=".9"><path d="M20 40V14a4 4 0 018 0v20M28 32V8a4 4 0 018 0v24M36 32V12a4 4 0 018 0v24M44 36V22a4 4 0 018 0v26c0 14-8 24-20 24-9 0-14-5-19-14l-7-13a4 4 0 017-4l7 9"/></g>
+          <path class="scan" d="M38 46h74" stroke-width="2" opacity=".6"/>
+        </svg>
+      </div>
+      <ul class="tips">
+        <li>Fique em um lugar <b>bem iluminado</b>, sem luz forte atrás da mão.</li>
+        <li>Abra a palma, com os <b>dedos levemente afastados</b>.</li>
+        <li>Mantenha a mão <b>parada</b> e inteira dentro da moldura.</li>
+        <li>Segure o celular <b>na vertical</b> até o fim.</li>
+      </ul>
+      <ul class="checks" id="wzChecks" aria-live="polite"></ul>
+      <div class="stack">
+        <button class="primary" id="wzStart" type="button">Abrir câmera</button>
+        <button id="wzBack4" type="button">Voltar</button>
+      </div>
+    </div>
+
+    <!-- 5. andamento / resultado -->
+    <div class="step card center" data-step="5" hidden>
+      <div class="result-icon wait" id="wzIcon"></div>
+      <h2 tabindex="-1" id="wzResTitle" aria-live="polite">Preparando…</h2>
+      <p class="lead" id="wzResText"></p>
+      <ul class="tips" id="wzResTips" style="text-align:left" hidden></ul>
+      <div class="stack" id="wzResActions"></div>
     </div>
   </section>
-
-  <details>
-    <summary>Detalhes técnicos da última operação</summary>
-    <pre id="debug">—</pre>
-  </details>
 </main>
 
 <!-- SDK H5 do Palm X (v1.4.0). Expõe window.PalmMobileManager. -->
@@ -118,7 +261,9 @@
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const buttons = ['btnRegister', 'btnVerify', 'btnStatus', 'btnDelete'].map($);
+  const homeButtons = ['btnRegister', 'btnVerify', 'btnStatus', 'btnDelete'].map($);
+  const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+  const HAND_PT = { left: 'esquerda', right: 'direita' };
 
   // Códigos de resultado do SDK (https://palm.tencent.com/docs/kyc-api/mobile-h5)
   const SDK_ERRORS = {
@@ -150,6 +295,36 @@
     10500: 'Erro de rede.',
   };
 
+  // Orientação de recuperação no cadastro: o que aconteceu, o que fazer, e se vale tentar de novo.
+  const CAM_STEPS = [
+    'Android (Chrome): toque no ícone à esquerda do endereço › Permissões › Câmera › Permitir.',
+    'iPhone (Safari): toque no botão de opções da página, na barra de endereço › Ajustes do Site › Câmera › Permitir.',
+    'Depois, toque em “Tentar de novo”.',
+  ];
+  const HELP = {
+    10002: { t: 'A captura foi interrompida', d: 'A câmera fechou antes de terminar. Isso também acontece quando o celular gira para a horizontal.', tips: ['Mantenha o celular na vertical até o fim.'], retry: true },
+    10003: { t: 'A câmera está bloqueada', d: 'O navegador não tem permissão para usar a câmera.', tips: CAM_STEPS, retry: true },
+    10004: { t: 'A câmera não abriu', d: 'Outro aplicativo pode estar usando a câmera.', tips: ['Feche outros apps que usam a câmera (videochamada, câmera).', 'Recarregue a página e tente de novo.'], retry: true },
+    10005: { t: 'Câmera não compatível', d: 'A câmera deste aparelho não oferece a resolução que a captura exige.', tips: ['Tente em outro celular.'], retry: false },
+    10008: { t: 'O tempo acabou', d: 'A captura dura até 30 segundos e a palma não foi lida a tempo.', tips: ['Deixe a mão pronta antes de abrir a câmera.', 'Enquadre a palma inteira na moldura e mantenha parada.'], retry: true },
+    10012: { t: 'A sessão expirou', d: 'O acesso temporário venceu antes da captura terminar.', tips: [], retry: true },
+    10100: { t: 'Não foi possível confirmar que é uma mão real', d: 'A verificação de prova de vida não passou.', tips: ['Use a sua mão diretamente, sem foto nem tela.', 'Melhore a iluminação e evite reflexos.', 'Tire luvas ou qualquer coisa que cubra a palma.'], retry: true },
+    10101: { t: 'A imagem não ficou nítida', d: 'A palma saiu tremida, cortada ou escura.', tips: ['Vá para um lugar mais iluminado, sem luz forte atrás da mão.', 'Limpe a lente da câmera.', 'Abra bem a palma e mantenha a mão parada dentro da moldura.'], retry: true },
+    10102: { t: 'O vídeo da captura foi recusado', d: 'O servidor não aceitou o vídeo de prova de vida.', tips: ['Mantenha a mão parada e bem iluminada durante toda a captura.'], retry: true },
+    10105: { t: 'Este aparelho não conseguiu gravar o vídeo', d: 'O navegador não gravou o vídeo curto que a captura exige.', tips: ['Atualize o navegador (Chrome no Android, Safari no iPhone).', 'Se continuar, tente em outro celular.'], retry: true },
+    10103: { t: 'Esta palma já está cadastrada', d: 'Não é preciso cadastrar de novo. Para refazer, exclua a palma na tela inicial e repita o cadastro.', tips: [], retry: false },
+    10104: { t: 'Cadastro em análise', d: 'Esta palma é muito parecida com a de outro usuário já cadastrado, e o cadastro não foi concluído.', tips: ['Verifique se esta pessoa já não tem cadastro com outro identificador.'], retry: false },
+    10021: { t: 'Usuário não encontrado na plataforma', d: 'A Palm X não reconheceu este identificador.', tips: [], retry: false },
+    10500: { t: 'Falha de conexão', d: 'A internet oscilou durante a captura.', tips: ['Confira o Wi‑Fi ou os dados móveis.'], retry: true },
+  };
+
+  const ICONS = {
+    ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    bad: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 7v6M12 17h.01"/></svg>',
+    wait: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 3a9 9 0 109 9"/></svg>',
+  };
+
+  // ---------- utilidades ----------
   function setStatus(kind, title, text) {
     const el = $('status');
     el.dataset.kind = kind;
@@ -159,17 +334,8 @@
     el.append(s, t);
   }
   const debug = (obj) => { $('debug').textContent = JSON.stringify(obj, null, 2); };
-  const busy = (on) => buttons.forEach((b) => (b.disabled = on));
-
-  function getUserId() {
-    const v = $('userId').value.trim();
-    if (!/^[A-Za-z0-9_-]{1,64}$/.test(v)) {
-      setStatus('warn', 'Identificador inválido', 'Use 1 a 64 caracteres: letras, dígitos, “-” e “_”.');
-      $('userId').focus();
-      return null;
-    }
-    return v;
-  }
+  const busy = (on) => homeButtons.forEach((b) => (b.disabled = on));
+  const getSdk = () => window.PalmMobileManager && window.PalmMobileManager.PalmMobileManager;
 
   async function api(method, path, body) {
     const resp = await fetch(path, {
@@ -185,6 +351,28 @@
       throw err;
     }
     return data;
+  }
+  const configP = api('GET', '/api/config').catch(() => ({}));
+
+  // Métricas do funil de cadastro: sem identificador do usuário, só etapa e código.
+  function track(event, extra) {
+    try {
+      fetch('/api/event', {
+        method: 'POST', keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event, ...extra }),
+      }).catch(() => {});
+    } catch (_) { /* métrica nunca pode quebrar o fluxo */ }
+  }
+
+  function getUserId() {
+    const v = $('userId').value.trim();
+    if (!ID_RE.test(v)) {
+      setStatus('warn', 'Informe o identificador', 'Esta ação precisa do identificador: 1 a 64 caracteres entre letras, dígitos, “-” e “_”.');
+      $('userId').focus();
+      return null;
+    }
+    return v;
   }
 
   function renderPalms(p) {
@@ -202,45 +390,27 @@
     }
   }
 
-  const configP = api('GET', '/api/config').catch(() => ({}));
-
-  // Reconhecimento 1:N: sem identificador e sem token; a palma diz quem é o usuário.
+  // ---------- verificação (tela inicial) ----------
   async function recognize() {
-    const sdk = window.PalmMobileManager && window.PalmMobileManager.PalmMobileManager;
-    if (!sdk) {
-      setStatus('bad', 'SDK não carregado', 'O script do Palm X não carregou. Verifique a conexão e se a página está em HTTPS.');
-      return;
-    }
+    const sdk = getSdk();
+    if (!sdk) return setStatus('bad', 'SDK não carregado', 'O script do Palm X não carregou. Verifique a conexão e se a página está em HTTPS.');
     const cfg = await configP;
     if (!cfg.appId) {
-      setStatus('warn', 'AppId não configurado',
+      return setStatus('warn', 'AppId não configurado',
         'Para verificar sem identificador, defina PALM_APP_ID no .env do servidor e reinicie o backend. Ou digite o identificador.');
-      return;
     }
     busy(true);
     try {
       setStatus('info', 'Câmera', 'Posicione a palma da mão em frente à câmera, com o aparelho na vertical.');
-      const result = await sdk.start({
-        token: '',
-        userId: '',
-        mode: 'recognition',
-        enableManager: false,
-        customHeaders: { AppId: cfg.appId },
-      });
+      const result = await sdk.start({ token: '', userId: '', mode: 'recognition', enableManager: false, customHeaders: { AppId: cfg.appId } });
       debug({ sdk: result });
-
       if (result.code !== 0) {
-        const msg = result.code === 10200
-          ? 'Palma não reconhecida: não corresponde a nenhum usuário cadastrado.'
+        const msg = result.code === 10200 ? 'Palma não reconhecida: não corresponde a nenhum usuário cadastrado.'
           : SDK_ERRORS[result.code] || result.message || 'Falha na operação.';
-        setStatus(result.code === 10002 ? 'warn' : 'bad', `Não concluído (código ${result.code})`, msg);
-        return;
+        return setStatus(result.code === 10002 ? 'warn' : 'bad', `Não concluído (código ${result.code})`, msg);
       }
       const sessionId = result.data && result.data.sessionId;
-      if (!sessionId) {
-        setStatus('warn', 'Resultado não confirmado', 'O SDK não devolveu sessionId, então o servidor não conseguiu validar a identificação.');
-        return;
-      }
+      if (!sessionId) return setStatus('warn', 'Resultado não confirmado', 'O SDK não devolveu sessionId, então o servidor não conseguiu validar a identificação.');
       setStatus('info', 'Confirmando…', 'Validando o resultado no servidor.');
       const conf = await api('POST', '/api/session/confirm', { sessionId, purpose: 'recognition' });
       debug({ sdk: result, servidor: conf });
@@ -253,82 +423,37 @@
     } catch (err) {
       debug({ erro: err.message, detalhe: err.payload || null });
       setStatus('bad', 'Erro', err.message);
-    } finally {
-      busy(false);
-    }
+    } finally { busy(false); }
   }
 
-  async function runSdk(purpose) {
-    if (purpose === 'verification' && $('userId').value.trim() === '') return recognize();
+  async function verify() {
+    if ($('userId').value.trim() === '') return recognize();
     const userId = getUserId();
     if (!userId) return;
-    if (purpose === 'registration' && !$('consent').checked) {
-      setStatus('warn', 'Consentimento necessário', 'Marque a autorização antes de cadastrar a palma.');
-      return;
-    }
-    const sdk = window.PalmMobileManager && window.PalmMobileManager.PalmMobileManager;
-    if (!sdk) {
-      setStatus('bad', 'SDK não carregado', 'O script do Palm X não carregou. Verifique a conexão e se a página está em HTTPS.');
-      return;
-    }
-
+    const sdk = getSdk();
+    if (!sdk) return setStatus('bad', 'SDK não carregado', 'O script do Palm X não carregou. Verifique a conexão e se a página está em HTTPS.');
     busy(true);
     try {
       setStatus('info', 'Preparando…', 'Solicitando token de sessão ao servidor.');
-      const tk = await api('POST', '/api/token', { userId, purpose, consent: $('consent').checked });
-
+      const tk = await api('POST', '/api/token', { userId, purpose: 'verification' });
       setStatus('info', 'Câmera', 'Posicione a palma da mão em frente à câmera, com o aparelho na vertical.');
-      const result = await sdk.start({
-        token: tk.token,
-        userId,                       // no modo verification, é o usuário-alvo da comparação 1:1
-        mode: purpose,                // 'registration' | 'verification'
-        enableManager: false,         // só captura: a página recebe o Result completo
-        customHeaders: tk.appId ? { AppId: tk.appId } : {},
-      });
+      const result = await sdk.start({ token: tk.token, userId, mode: 'verification', enableManager: false, customHeaders: tk.appId ? { AppId: tk.appId } : {} });
       debug({ sdk: result });
-
       if (result.code !== 0) {
-        const msg = SDK_ERRORS[result.code] || result.message || 'Falha na operação.';
-        setStatus(result.code === 10002 ? 'warn' : 'bad', `Não concluído (código ${result.code})`, msg);
-        return;
+        return setStatus(result.code === 10002 ? 'warn' : 'bad', `Não concluído (código ${result.code})`, SDK_ERRORS[result.code] || result.message || 'Falha na operação.');
       }
-
-      // Nunca confiar só no retorno do navegador: confirmar no servidor.
       const sessionId = result.data && result.data.sessionId;
-      if (!sessionId) {
-        if (purpose === 'registration') {
-          const palms = await api('GET', `/api/palm/${encodeURIComponent(userId)}`);
-          renderPalms(palms);
-          const ok = (palms.left && palms.left.ativa) || (palms.right && palms.right.ativa);
-          setStatus(ok ? 'ok' : 'warn', ok ? 'Palma cadastrada' : 'Cadastro não confirmado',
-            ok ? 'Cadastro confirmado pela consulta ao servidor.' : 'O SDK informou sucesso, mas o servidor não mostra palma ativa.');
-        } else {
-          setStatus('warn', 'Resultado não confirmado',
-            'O SDK não devolveu sessionId, então o servidor não conseguiu validar a verificação.');
-        }
-        return;
-      }
-
+      if (!sessionId) return setStatus('warn', 'Resultado não confirmado', 'O SDK não devolveu sessionId, então o servidor não conseguiu validar a verificação.');
       setStatus('info', 'Confirmando…', 'Validando o resultado no servidor.');
-      const conf = await api('POST', '/api/session/confirm', { sessionId, userId, purpose });
+      const conf = await api('POST', '/api/session/confirm', { sessionId, userId, purpose: 'verification' });
       debug({ sdk: result, servidor: conf });
-
-      if (purpose === 'registration') {
-        if (conf.palmas) renderPalms(conf.palmas);
-        conf.confirmado
-          ? setStatus('ok', 'Palma cadastrada', 'Cadastro confirmado pelo servidor.')
-          : setStatus('bad', 'Cadastro não confirmado', 'A sessão não pertence a este usuário.');
-      } else {
-        conf.confirmado
-          ? setStatus('ok', 'Identidade confirmada', `A palma corresponde ao usuário ${userId} (score ${conf.score}).`)
-          : setStatus('bad', 'Identidade não confirmada', 'A palma não corresponde ao usuário informado.');
-      }
+      conf.confirmado
+        ? setStatus('ok', 'Identidade confirmada', `A palma corresponde ao usuário ${userId} (score ${conf.score}).`)
+        : setStatus('bad', 'Identidade não confirmada', 'A palma não corresponde ao usuário informado.');
     } catch (err) {
       debug({ erro: err.message, detalhe: err.payload || null });
       setStatus('bad', 'Erro', err.message);
-    } finally {
-      busy(false);
-    }
+    } finally { busy(false); }
   }
 
   async function showStatus() {
@@ -351,8 +476,7 @@
   async function deletePalms() {
     const userId = getUserId();
     if (!userId) return;
-    // Confirmação em dois toques (sem diálogo modal do navegador).
-    if (deleteArmed !== userId) {
+    if (deleteArmed !== userId) {   // confirmação em dois toques, sem diálogo modal
       deleteArmed = userId;
       $('btnDelete').textContent = 'Toque de novo para excluir';
       setStatus('warn', 'Confirmar exclusão', `As palmas de ${userId} serão apagadas da plataforma. Toque novamente para confirmar.`);
@@ -373,15 +497,236 @@
     } finally { busy(false); }
   }
 
-  $('btnRegister').addEventListener('click', () => runSdk('registration'));
-  $('btnVerify').addEventListener('click', () => runSdk('verification'));
+  // ---------- assistente de cadastro ----------
+  const wz = { step: 1, userId: '', palms: { left: null, right: null }, hand: null, attempts: 0, running: false };
+  const steps = [...document.querySelectorAll('#wizard .step')];
+  const handBtns = [...document.querySelectorAll('.hand')];
+
+  function goStep(n) {
+    wz.step = n;
+    steps.forEach((s) => (s.hidden = Number(s.dataset.step) !== n));
+    $('wzHead').hidden = n > 4;
+    if (n <= 4) {
+      $('wzCount').textContent = `Passo ${n} de 4`;
+      $('wzBar').style.width = `${n * 25}%`;
+    }
+    const h = steps[n - 1].querySelector('h2');
+    h.focus({ preventScroll: true });
+    window.scrollTo({ top: 0 });
+    if (n === 3) renderHands();
+    if (n === 4) runChecks();
+    if (n <= 4) track('step_view', { step: String(n) });
+  }
+
+  function openWizard() {
+    $('home').hidden = true;
+    $('wizard').hidden = false;
+    $('wzUser').value = $('userId').value.trim();
+    $('wzUserErr').textContent = '';
+    $('wzUser').removeAttribute('aria-invalid');
+    $('wzConsent').checked = false;
+    $('wzNext2').disabled = true;
+    wz.hand = null; wz.attempts = 0;
+    track('wizard_open');
+    goStep(1);
+  }
+
+  function closeWizard(reason) {
+    $('wizard').hidden = true;
+    $('home').hidden = false;
+    if (wz.userId) $('userId').value = wz.userId;
+    track('wizard_close', { step: String(wz.step), reason });
+    window.scrollTo({ top: 0 });
+  }
+
+  async function step1Next() {
+    const v = $('wzUser').value.trim();
+    const err = $('wzUserErr');
+    if (!ID_RE.test(v)) {
+      err.textContent = v ? 'Use só letras, dígitos, “-” e “_”, sem espaços nem acentos.' : 'Digite o identificador para continuar.';
+      $('wzUser').setAttribute('aria-invalid', 'true');
+      $('wzUser').focus();
+      return;
+    }
+    err.textContent = '';
+    $('wzUser').removeAttribute('aria-invalid');
+    const btn = $('wzNext1');
+    btn.disabled = true; btn.textContent = 'Consultando…';
+    try {
+      wz.palms = await api('GET', `/api/palm/${encodeURIComponent(v)}`);
+      wz.userId = v;
+      if (wz.palms.left && wz.palms.right) {
+        err.textContent = 'Este usuário já tem as duas mãos cadastradas. Para refazer, exclua as palmas na tela inicial.';
+        return;
+      }
+      goStep(2);
+    } catch (e) {
+      err.textContent = `Não foi possível consultar o servidor: ${e.message}`;
+    } finally {
+      btn.disabled = false; btn.textContent = 'Continuar';
+    }
+  }
+
+  function renderHands() {
+    const free = ['right', 'left'].filter((h) => !wz.palms[h]);
+    if (!wz.hand || wz.palms[wz.hand]) wz.hand = free.length === 1 ? free[0] : null;
+    handBtns.forEach((b) => {
+      const h = b.dataset.hand;
+      const taken = Boolean(wz.palms[h]);
+      b.disabled = taken;
+      b.setAttribute('aria-pressed', String(wz.hand === h));
+      b.querySelector('[data-note]').textContent = taken ? 'Já cadastrada' : '';
+    });
+    $('wzNext3').disabled = !wz.hand;
+  }
+
+  async function runChecks() {
+    $('wzPrepTitle').textContent = `Prepare a mão ${HAND_PT[wz.hand]}`;
+    const items = [];
+    let blocked = false;
+    const add = (s, text) => { items.push([s, text]); if (s === 'bad') blocked = true; };
+
+    window.isSecureContext ? add('ok', 'Conexão segura (HTTPS).')
+      : add('bad', 'A página não está em HTTPS, então o navegador não libera a câmera. Abra pelo endereço https://.');
+    (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? add('ok', 'Câmera disponível neste navegador.')
+      : add('bad', 'Este navegador não dá acesso à câmera. Use o Chrome (Android) ou o Safari (iPhone).');
+    getSdk() ? add('ok', 'Componente de captura carregado.')
+      : add('bad', 'O componente de captura não carregou. Confira a internet e recarregue a página.');
+
+    let perm = null;
+    try { perm = (await navigator.permissions.query({ name: 'camera' })).state; } catch (_) { /* Safari/Firefox não informam */ }
+    if (perm === 'granted') add('ok', 'Permissão da câmera já liberada.');
+    else if (perm === 'denied') add('bad', 'A câmera está bloqueada para este site. Libere nas permissões do site (ícone à esquerda do endereço) e recarregue.');
+    else add('warn', 'O navegador vai pedir acesso à câmera: toque em “Permitir”.');
+
+    window.matchMedia('(orientation: landscape)').matches && 'ontouchstart' in window
+      ? add('bad', 'O celular está na horizontal. Gire para a vertical.')
+      : add('ok', 'Celular na vertical.');
+
+    if (wz.step !== 4) return;
+    const ul = $('wzChecks');
+    ul.innerHTML = '';
+    for (const [s, text] of items) {
+      const li = document.createElement('li'); li.dataset.s = s; li.textContent = text; ul.append(li);
+    }
+    $('wzStart').disabled = blocked || wz.running;
+  }
+
+  function showResult(kind, title, text, tips, actions) {
+    goStep(5);
+    const icon = $('wzIcon');
+    icon.className = `result-icon ${kind}`;
+    icon.innerHTML = ICONS[kind];
+    $('wzResTitle').textContent = title;
+    $('wzResText').textContent = text || '';
+    const ul = $('wzResTips');
+    ul.innerHTML = '';
+    ul.hidden = !(tips && tips.length);
+    (tips || []).forEach((t) => { const li = document.createElement('li'); li.textContent = t; ul.append(li); });
+    const box = $('wzResActions');
+    box.innerHTML = '';
+    (actions || []).forEach(([label, fn, cls]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = label; if (cls) b.className = cls;
+      b.addEventListener('click', fn);
+      box.append(b);
+    });
+  }
+
+  function showFailure(code, fallbackMsg) {
+    const h = HELP[code] || { t: 'Não foi possível concluir', d: SDK_ERRORS[code] || fallbackMsg || 'Ocorreu uma falha inesperada.', tips: [], retry: true };
+    const tips = [...h.tips];
+    if (h.retry && wz.attempts >= 2 && [10100, 10101, 10102, 10008].includes(code)) {
+      tips.push('Já foram algumas tentativas: vale mudar de ambiente, perto de uma janela ou sob uma luz mais forte.');
+    }
+    const actions = [];
+    if (h.retry) actions.push(['Tentar de novo', capture, 'primary']);
+    actions.push(['Ver as dicas de preparo', () => goStep(4)]);
+    actions.push(['Voltar ao início', () => closeWizard('failure'), 'link']);
+    showResult('bad', h.t, `${h.d}${code ? ` (código ${code})` : ''}`, tips, actions);
+  }
+
+  function showSuccess() {
+    const other = wz.hand === 'left' ? 'right' : 'left';
+    const actions = [];
+    actions.push(['Testar a verificação agora', () => { closeWizard('test_verify'); verify(); }, 'primary']);
+    if (!wz.palms[other]) actions.push([`Cadastrar também a mão ${HAND_PT[other]}`, () => { wz.hand = other; wz.attempts = 0; goStep(4); }]);
+    actions.push(['Concluir', () => { closeWizard('done'); renderPalms(wz.palms); setStatus('ok', 'Palma cadastrada', `Mão ${HAND_PT[wz.hand]} de ${wz.userId} cadastrada.`); }]);
+    showResult('ok', `Mão ${HAND_PT[wz.hand]} cadastrada`, 'Tudo certo. A partir de agora esta palma identifica você.', null, actions);
+    if (navigator.vibrate) { try { navigator.vibrate(60); } catch (_) {} }
+  }
+
+  async function capture() {
+    if (wz.running) return;
+    const sdk = getSdk();
+    if (!sdk) return showFailure(0, 'O componente de captura não carregou. Confira a internet e recarregue a página.');
+    wz.running = true;
+    wz.attempts += 1;
+    showResult('wait', 'Preparando a câmera…', 'Quando o navegador pedir, toque em “Permitir”.');
+    try {
+      const tk = await api('POST', '/api/token', { userId: wz.userId, purpose: 'registration', consent: $('wzConsent').checked });
+      track('capture_start', { attempt: wz.attempts });
+      const result = await sdk.start({
+        token: tk.token,
+        userId: wz.userId,
+        mode: 'registration',
+        palmDirection: wz.hand,           // 'left' | 'right'
+        enableManager: false,             // a página recebe o Result completo e cuida das mensagens
+        customHeaders: tk.appId ? { AppId: tk.appId } : {},
+      });
+      debug({ sdk: result });
+      track('capture_result', { code: result.code, attempt: wz.attempts });
+      if (result.code !== 0) return showFailure(result.code, result.message);
+
+      showResult('wait', 'Confirmando o cadastro…', 'Só mais um instante.');
+      const sessionId = result.data && result.data.sessionId;
+      let confirmed = false;
+      if (sessionId) {
+        const conf = await api('POST', '/api/session/confirm', { sessionId, userId: wz.userId, purpose: 'registration' });
+        debug({ sdk: result, servidor: conf });
+        confirmed = Boolean(conf.confirmado);
+        if (conf.palmas) wz.palms = conf.palmas;
+      } else {
+        wz.palms = await api('GET', `/api/palm/${encodeURIComponent(wz.userId)}`);
+        confirmed = Boolean((wz.palms.left && wz.palms.left.ativa) || (wz.palms.right && wz.palms.right.ativa));
+      }
+      if (!wz.palms[wz.hand]) wz.palms[wz.hand] = { ativa: true, altaSimilaridade: false, registradaEm: Math.floor(Date.now() / 1000) };
+      track(confirmed ? 'confirm_ok' : 'confirm_fail', { attempt: wz.attempts });
+      confirmed ? showSuccess()
+        : showResult('bad', 'Cadastro não confirmado', 'A captura terminou, mas o servidor não confirmou o cadastro desta palma.', null,
+            [['Tentar de novo', capture, 'primary'], ['Voltar ao início', () => closeWizard('unconfirmed'), 'link']]);
+    } catch (err) {
+      debug({ erro: err.message, detalhe: err.payload || null });
+      track('capture_error', { attempt: wz.attempts });
+      showResult('bad', 'Não foi possível continuar', err.message, null,
+        [['Tentar de novo', capture, 'primary'], ['Voltar ao início', () => closeWizard('error'), 'link']]);
+    } finally {
+      wz.running = false;
+    }
+  }
+
+  // ---------- ligações ----------
+  $('btnRegister').addEventListener('click', openWizard);
+  $('btnVerify').addEventListener('click', verify);
   $('btnStatus').addEventListener('click', showStatus);
   $('btnDelete').addEventListener('click', deletePalms);
 
+  $('wzCancel').addEventListener('click', () => closeWizard('cancel'));
+  $('wzNext1').addEventListener('click', step1Next);
+  $('wzUser').addEventListener('keydown', (e) => { if (e.key === 'Enter') step1Next(); });
+  $('wzUser').addEventListener('input', () => { $('wzUserErr').textContent = ''; $('wzUser').removeAttribute('aria-invalid'); });
+  $('wzConsent').addEventListener('change', (e) => { $('wzNext2').disabled = !e.target.checked; });
+  $('wzNext2').addEventListener('click', () => goStep(3));
+  $('wzBack2').addEventListener('click', () => goStep(1));
+  handBtns.forEach((b) => b.addEventListener('click', () => { wz.hand = b.dataset.hand; renderHands(); }));
+  $('wzNext3').addEventListener('click', () => goStep(4));
+  $('wzBack3').addEventListener('click', () => goStep(2));
+  $('wzStart').addEventListener('click', capture);
+  $('wzBack4').addEventListener('click', () => goStep(3));
+  window.matchMedia('(orientation: landscape)').addEventListener('change', () => { if (wz.step === 4 && !$('wizard').hidden) runChecks(); });
+
   configP.then((c) => {
-    if (c.apiKeyConfigurada === false) {
-      setStatus('warn', 'Servidor sem chave', 'Defina PALM_API_KEY no arquivo .env e reinicie o backend.');
-    }
+    if (c.apiKeyConfigurada === false) setStatus('warn', 'Servidor sem chave', 'Defina PALM_API_KEY no arquivo .env e reinicie o backend.');
   });
 })();
 </script>

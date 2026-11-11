@@ -137,6 +137,14 @@ def test_delete_sends_direction_list(client):
     assert path == main.PATH_DELETE_PALM and body == {"UserId": "u1", "PalmDirectionList": [1, 2]}
 
 
+def test_event_log_accepts_funnel_event_and_rejects_free_text(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(main, "EVENTS_LOG", tmp_path / "events.jsonl")
+    assert client.post("/api/event", json={"event": "capture_result", "code": 10101, "attempt": 2}).status_code == 204
+    rec = json.loads(main.EVENTS_LOG.read_text().strip())
+    assert rec["event"] == "capture_result" and rec["code"] == 10101 and "userId" not in rec
+    assert client.post("/api/event", json={"event": "Nome Da Pessoa"}).status_code == 422
+
+
 def test_missing_api_key(client, monkeypatch):
     monkeypatch.delenv("PALM_API_KEY")
     r = client.get("/api/palm/u1")

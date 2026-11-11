@@ -3,3 +3,4 @@
 __pycache__/
 .pytest_cache/
 consent_log.jsonl
+events.jsonl

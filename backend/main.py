@@ -33,7 +33,8 @@ PALM_BASE_URL = os.getenv("PALM_BASE_URL", "https://open.intl.palm.tencent.com")
 PALM_APP_ID = os.getenv("PALM_APP_ID", "")
 TOKEN_TTL_SECONDS = int(os.getenv("TOKEN_TTL_SECONDS", "600"))
 CONSENT_LOG = Path(os.getenv("CONSENT_LOG", str(ROOT / "consent_log.jsonl")))
-CONSENT_VERSION = "v1-2026-11"
+EVENTS_LOG = Path(os.getenv("EVENTS_LOG", str(ROOT / "events.jsonl")))
+CONSENT_VERSION = "v2-2026-11"
 
 # Caminhos documentados em https://palm.tencent.com/docs/kyc-api
 PATH_CREATE_TOKEN = "/palm/openai/x/oauth/sdk/usertoken/create"
@@ -265,6 +266,23 @@ async def delete_palm(user_id: str, req: Optional[DeleteRequest] = None):
         if exc.code not in (CODE_USER_NOT_IN_DB, CODE_NO_PALM):
             raise
     return {"userId": user_id, "excluidas": directions}
+
+
+class EventRequest(BaseModel):
+    """Evento do funil de cadastro. De propósito, não carrega identificador do usuário."""
+    event: str = Field(pattern=r"^[a-z_]{1,40}$")
+    step: Optional[str] = Field(default=None, max_length=8)
+    code: Optional[int] = None
+    attempt: Optional[int] = Field(default=None, ge=0, le=99)
+    reason: Optional[str] = Field(default=None, max_length=24)
+
+
+@app.post("/api/event", status_code=204)
+async def log_event(ev: EventRequest):
+    """Grava métricas de uso (em que passo as pessoas param, quais erros aparecem)."""
+    record = {"timestamp": datetime.now(timezone.utc).isoformat(), **ev.model_dump(exclude_none=True)}
+    with EVENTS_LOG.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
 @app.get("/")
