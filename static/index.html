@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Protótipo Palm X</title>
+<style>
+  :root {
+    --bg: #f4f1ea; --surface: #fffdf8; --ink: #1d2320; --muted: #66706a;
+    --line: #dcd6c8; --accent: #0d6b57; --accent-ink: #ffffff;
+    --ok: #0d6b57; --ok-bg: #dff1ea; --bad: #a3321f; --bad-bg: #f9e2dc;
+    --warn: #7a5a00; --warn-bg: #f8ecc6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121614; --surface: #1b211e; --ink: #ecefe9; --muted: #9aa59e;
+      --line: #2f3833; --accent: #49c2a3; --accent-ink: #06231c;
+      --ok: #6bd6b8; --ok-bg: #14342b; --bad: #f29a88; --bad-bg: #3d1c15;
+      --warn: #ecc967; --warn-bg: #3a2f0d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 20px 16px calc(32px + env(safe-area-inset-bottom));
+  }
+  main { max-width: 480px; margin: 0 auto; display: grid; gap: 16px; }
+  header h1 { font-size: 1.5rem; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px; }
+  label.field { display: grid; gap: 6px; font-weight: 600; font-size: 0.95rem; }
+  input[type=text] {
+    font: inherit; padding: 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); width: 100%;
+  }
+  input:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .hint { font-size: 0.85rem; color: var(--muted); margin: 6px 0 0; }
+  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9rem; }
+  .consent input { width: 22px; height: 22px; margin: 2px 0 0; flex: none; accent-color: var(--accent); }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  button {
+    font: inherit; font-weight: 600; min-height: 48px; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+  }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button.danger { color: var(--bad); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  #status { border-radius: 14px; padding: 14px 16px; border: 1px solid var(--line); background: var(--surface); }
+  #status[data-kind=ok] { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+  #status[data-kind=bad] { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+  #status[data-kind=warn] { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
+  #status strong { display: block; font-size: 1.05rem; }
+  #status span { font-size: 0.9rem; }
+  .palms { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .palm { border: 1px dashed var(--line); border-radius: 10px; padding: 10px; font-size: 0.9rem; }
+  .palm b { display: block; }
+  .palm[data-on=true] { border-style: solid; border-color: var(--ok); }
+  details { font-size: 0.85rem; color: var(--muted); }
+  pre { white-space: pre-wrap; word-break: break-word; font-size: 0.8rem; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Biometria por palma</h1>
+    <p>Protótipo de cadastro e verificação com Tencent Palm X.</p>
+  </header>
+
+  <section class="card">
+    <h2>Titular</h2>
+    <label class="field">Identificador do usuário
+      <input id="userId" type="text" inputmode="text" autocomplete="off" autocapitalize="none"
+             placeholder="ex.: socio-00123" maxlength="64">
+    </label>
+    <p class="hint">Letras, dígitos, “-” e “_”. Use um código interno, não CPF nem nome.</p>
+  </section>
+
+  <section class="card">
+    <h2>Consentimento</h2>
+    <label class="consent">
+      <input id="consent" type="checkbox">
+      <span>Autorizo a coleta da imagem da palma da minha mão para fins de identificação
+        biométrica neste protótipo. Sei que posso excluir esse dado a qualquer momento
+        pelo botão “Excluir palmas”.</span>
+    </label>
+  </section>
+
+  <section class="actions">
+    <button id="btnRegister" class="primary">Cadastrar palma</button>
+    <button id="btnVerify" class="primary">Verificar palma</button>
+    <button id="btnStatus">Consultar cadastro</button>
+    <button id="btnDelete" class="danger">Excluir palmas</button>
+  </section>
+
+  <div id="status" role="status" aria-live="polite" data-kind="info">
+    <strong>Pronto</strong><span>Informe o identificador e escolha uma ação.</span>
+  </div>
+
+  <section class="card" id="palmsCard" hidden>
+    <h2>Palmas cadastradas</h2>
+    <div class="palms">
+      <div class="palm" id="palmLeft"><b>Esquerda</b><span>—</span></div>
+      <div class="palm" id="palmRight"><b>Direita</b><span>—</span></div>
+    </div>
+  </section>
+
+  <details>
+    <summary>Detalhes técnicos da última operação</summary>
+    <pre id="debug">—</pre>
+  </details>
+</main>
+
+<!-- SDK H5 do Palm X (v1.4.0). Expõe window.PalmMobileManager. -->
+<script src="https://open.intl.palm.tencent.com/palm/x/jssdk/loader/palm-mobile-manager.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const buttons = ['btnRegister', 'btnVerify', 'btnStatus', 'btnDelete'].map($);
+
+  // Códigos de resultado do SDK (https://palm.tencent.com/docs/kyc-api/mobile-h5)
+  const SDK_ERRORS = {
+    10000: 'Erro desconhecido.',
+    10001: 'Parâmetros inválidos.',
+    10002: 'Captura cancelada (ou o aparelho foi girado para paisagem).',
+    10003: 'Permissão de câmera negada. Libere a câmera nas configurações do navegador.',
+    10004: 'Não foi possível iniciar a câmera.',
+    10005: 'Resolução de câmera não suportada.',
+    10006: 'Falha ao iniciar o SDK.',
+    10007: 'Erro de execução do SDK (já existe uma sessão em andamento?).',
+    10008: 'Tempo esgotado (30 s). Tente novamente com a mão bem enquadrada.',
+    10012: 'Token inválido ou expirado. Tente de novo.',
+    10016: 'Falha na validação da licença do SDK.',
+    10018: 'Formato de identificador inválido.',
+    10020: 'Aplicação desativada na plataforma Palm X.',
+    10021: 'Usuário não existe na plataforma Palm X.',
+    10100: 'Prova de vida reprovada. Use a mão real, com boa iluminação.',
+    10101: 'Qualidade insuficiente. Evite imagem tremida, mão cortada ou pouca luz.',
+    10102: 'Vídeo de prova de vida rejeitado pelo servidor.',
+    10103: 'Esta palma já está cadastrada.',
+    10104: 'Palma muito semelhante à de outro usuário já cadastrado.',
+    10105: 'Não foi possível gravar o vídeo de prova de vida neste aparelho.',
+    10200: 'Palma não reconhecida para este usuário.',
+    10300: 'Usuário não encontrado.',
+    10301: 'Este usuário ainda não tem palma cadastrada.',
+    10302: 'Este usuário não cadastrou esta mão (esquerda/direita).',
+    10401: 'Acesso não autorizado ao gateway.',
+    10500: 'Erro de rede.',
+  };
+
+  function setStatus(kind, title, text) {
+    const el = $('status');
+    el.dataset.kind = kind;
+    el.innerHTML = '';
+    const s = document.createElement('strong'); s.textContent = title;
+    const t = document.createElement('span'); t.textContent = text || '';
+    el.append(s, t);
+  }
+  const debug = (obj) => { $('debug').textContent = JSON.stringify(obj, null, 2); };
+  const busy = (on) => buttons.forEach((b) => (b.disabled = on));
+
+  function getUserId() {
+    const v = $('userId').value.trim();
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(v)) {
+      setStatus('warn', 'Identificador inválido', 'Use 1 a 64 caracteres: letras, dígitos, “-” e “_”.');
+      $('userId').focus();
+      return null;
+    }
+    return v;
+  }
+
+  async function api(method, path, body) {
+    const resp = await fetch(path, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      const msg = data.detail || (data.erro ? `${data.erro} (código ${data.codigo}: ${data.mensagem})` : `HTTP ${resp.status}`);
+      const err = new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      err.payload = data;
+      throw err;
+    }
+    return data;
+  }
+
+  function renderPalms(p) {
+    $('palmsCard').hidden = false;
+    for (const [side, id] of [['left', 'palmLeft'], ['right', 'palmRight']]) {
+      const info = p[side];
+      const el = $(id);
+      el.dataset.on = String(Boolean(info && info.ativa));
+      let text = 'Não cadastrada';
+      if (info) {
+        const when = info.registradaEm ? new Date(info.registradaEm * 1000).toLocaleString('pt-BR') : '';
+        text = info.ativa ? `Ativa · ${when}` : info.altaSimilaridade ? 'Em análise: alta similaridade' : 'Estado desconhecido';
+      }
+      el.querySelector('span').textContent = text;
+    }
+  }
+
+  async function runSdk(purpose) {
+    const userId = getUserId();
+    if (!userId) return;
+    if (purpose === 'registration' && !$('consent').checked) {
+      setStatus('warn', 'Consentimento necessário', 'Marque a autorização antes de cadastrar a palma.');
+      return;
+    }
+    const sdk = window.PalmMobileManager && window.PalmMobileManager.PalmMobileManager;
+    if (!sdk) {
+      setStatus('bad', 'SDK não carregado', 'O script do Palm X não carregou. Verifique a conexão e se a página está em HTTPS.');
+      return;
+    }
+
+    busy(true);
+    try {
+      setStatus('info', 'Preparando…', 'Solicitando token de sessão ao servidor.');
+      const tk = await api('POST', '/api/token', { userId, purpose, consent: $('consent').checked });
+
+      setStatus('info', 'Câmera', 'Posicione a palma da mão em frente à câmera, com o aparelho na vertical.');
+      const result = await sdk.start({
+        token: tk.token,
+        userId,                       // no modo verification, é o usuário-alvo da comparação 1:1
+        mode: purpose,                // 'registration' | 'verification'
+        enableManager: false,         // só captura: a página recebe o Result completo
+        customHeaders: tk.appId ? { AppId: tk.appId } : {},
+      });
+      debug({ sdk: result });
+
+      if (result.code !== 0) {
+        const msg = SDK_ERRORS[result.code] || result.message || 'Falha na operação.';
+        setStatus(result.code === 10002 ? 'warn' : 'bad', `Não concluído (código ${result.code})`, msg);
+        return;
+      }
+
+      // Nunca confiar só no retorno do navegador: confirmar no servidor.
+      const sessionId = result.data && result.data.sessionId;
+      if (!sessionId) {
+        if (purpose === 'registration') {
+          const palms = await api('GET', `/api/palm/${encodeURIComponent(userId)}`);
+          renderPalms(palms);
+          const ok = (palms.left && palms.left.ativa) || (palms.right && palms.right.ativa);
+          setStatus(ok ? 'ok' : 'warn', ok ? 'Palma cadastrada' : 'Cadastro não confirmado',
+            ok ? 'Cadastro confirmado pela consulta ao servidor.' : 'O SDK informou sucesso, mas o servidor não mostra palma ativa.');
+        } else {
+          setStatus('warn', 'Resultado não confirmado',
+            'O SDK não devolveu sessionId, então o servidor não conseguiu validar a verificação.');
+        }
+        return;
+      }
+
+      setStatus('info', 'Confirmando…', 'Validando o resultado no servidor.');
+      const conf = await api('POST', '/api/session/confirm', { sessionId, userId, purpose });
+      debug({ sdk: result, servidor: conf });
+
+      if (purpose === 'registration') {
+        if (conf.palmas) renderPalms(conf.palmas);
+        conf.confirmado
+          ? setStatus('ok', 'Palma cadastrada', 'Cadastro confirmado pelo servidor.')
+          : setStatus('bad', 'Cadastro não confirmado', 'A sessão não pertence a este usuário.');
+      } else {
+        conf.confirmado
+          ? setStatus('ok', 'Identidade confirmada', `A palma corresponde ao usuário ${userId} (score ${conf.score}).`)
+          : setStatus('bad', 'Identidade não confirmada', 'A palma não corresponde ao usuário informado.');
+      }
+    } catch (err) {
+      debug({ erro: err.message, detalhe: err.payload || null });
+      setStatus('bad', 'Erro', err.message);
+    } finally {
+      busy(false);
+    }
+  }
+
+  async function showStatus() {
+    const userId = getUserId();
+    if (!userId) return;
+    busy(true);
+    try {
+      const palms = await api('GET', `/api/palm/${encodeURIComponent(userId)}`);
+      debug({ servidor: palms });
+      renderPalms(palms);
+      const n = ['left', 'right'].filter((s) => palms[s]).length;
+      setStatus('info', 'Consulta concluída', n ? `${n} palma(s) cadastrada(s).` : 'Nenhuma palma cadastrada para este usuário.');
+    } catch (err) {
+      debug({ erro: err.message, detalhe: err.payload || null });
+      setStatus('bad', 'Erro', err.message);
+    } finally { busy(false); }
+  }
+
+  let deleteArmed = null;
+  async function deletePalms() {
+    const userId = getUserId();
+    if (!userId) return;
+    // Confirmação em dois toques (sem diálogo modal do navegador).
+    if (deleteArmed !== userId) {
+      deleteArmed = userId;
+      $('btnDelete').textContent = 'Toque de novo para excluir';
+      setStatus('warn', 'Confirmar exclusão', `As palmas de ${userId} serão apagadas da plataforma. Toque novamente para confirmar.`);
+      setTimeout(() => { deleteArmed = null; $('btnDelete').textContent = 'Excluir palmas'; }, 6000);
+      return;
+    }
+    deleteArmed = null;
+    $('btnDelete').textContent = 'Excluir palmas';
+    busy(true);
+    try {
+      const out = await api('DELETE', `/api/palm/${encodeURIComponent(userId)}`, { directions: ['left', 'right'] });
+      debug({ servidor: out });
+      renderPalms({ left: null, right: null });
+      setStatus('ok', 'Palmas excluídas', 'Os dados biométricos deste usuário foram removidos.');
+    } catch (err) {
+      debug({ erro: err.message, detalhe: err.payload || null });
+      setStatus('bad', 'Erro', err.message);
+    } finally { busy(false); }
+  }
+
+  $('btnRegister').addEventListener('click', () => runSdk('registration'));
+  $('btnVerify').addEventListener('click', () => runSdk('verification'));
+  $('btnStatus').addEventListener('click', showStatus);
+  $('btnDelete').addEventListener('click', deletePalms);
+
+  api('GET', '/api/config').then((c) => {
+    if (!c.apiKeyConfigurada) {
+      setStatus('warn', 'Servidor sem chave', 'Defina PALM_API_KEY no arquivo .env e reinicie o backend.');
+    }
+  }).catch(() => {});
+})();
+</script>
+</body>
+</html>
