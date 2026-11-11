@@ -74,7 +74,8 @@
       <input id="userId" type="text" inputmode="text" autocomplete="off" autocapitalize="none"
              placeholder="ex.: socio-00123" maxlength="64">
     </label>
-    <p class="hint">Letras, dígitos, “-” e “_”. Use um código interno, não CPF nem nome.</p>
+    <p class="hint">Letras, dígitos, “-” e “_”. Use um código interno, não CPF nem nome.
+      Para <b>verificar</b>, pode deixar em branco: a própria palma identifica o usuário.</p>
   </section>
 
   <section class="card">
@@ -201,7 +202,64 @@
     }
   }
 
+  const configP = api('GET', '/api/config').catch(() => ({}));
+
+  // Reconhecimento 1:N: sem identificador e sem token; a palma diz quem é o usuário.
+  async function recognize() {
+    const sdk = window.PalmMobileManager && window.PalmMobileManager.PalmMobileManager;
+    if (!sdk) {
+      setStatus('bad', 'SDK não carregado', 'O script do Palm X não carregou. Verifique a conexão e se a página está em HTTPS.');
+      return;
+    }
+    const cfg = await configP;
+    if (!cfg.appId) {
+      setStatus('warn', 'AppId não configurado',
+        'Para verificar sem identificador, defina PALM_APP_ID no .env do servidor e reinicie o backend. Ou digite o identificador.');
+      return;
+    }
+    busy(true);
+    try {
+      setStatus('info', 'Câmera', 'Posicione a palma da mão em frente à câmera, com o aparelho na vertical.');
+      const result = await sdk.start({
+        token: '',
+        userId: '',
+        mode: 'recognition',
+        enableManager: false,
+        customHeaders: { AppId: cfg.appId },
+      });
+      debug({ sdk: result });
+
+      if (result.code !== 0) {
+        const msg = result.code === 10200
+          ? 'Palma não reconhecida: não corresponde a nenhum usuário cadastrado.'
+          : SDK_ERRORS[result.code] || result.message || 'Falha na operação.';
+        setStatus(result.code === 10002 ? 'warn' : 'bad', `Não concluído (código ${result.code})`, msg);
+        return;
+      }
+      const sessionId = result.data && result.data.sessionId;
+      if (!sessionId) {
+        setStatus('warn', 'Resultado não confirmado', 'O SDK não devolveu sessionId, então o servidor não conseguiu validar a identificação.');
+        return;
+      }
+      setStatus('info', 'Confirmando…', 'Validando o resultado no servidor.');
+      const conf = await api('POST', '/api/session/confirm', { sessionId, purpose: 'recognition' });
+      debug({ sdk: result, servidor: conf });
+      if (conf.confirmado) {
+        $('userId').value = conf.userId;
+        setStatus('ok', 'Usuário identificado', `Esta palma pertence a ${conf.userId} (score ${conf.score}).`);
+      } else {
+        setStatus('bad', 'Usuário não identificado', 'O servidor não confirmou a correspondência desta palma.');
+      }
+    } catch (err) {
+      debug({ erro: err.message, detalhe: err.payload || null });
+      setStatus('bad', 'Erro', err.message);
+    } finally {
+      busy(false);
+    }
+  }
+
   async function runSdk(purpose) {
+    if (purpose === 'verification' && $('userId').value.trim() === '') return recognize();
     const userId = getUserId();
     if (!userId) return;
     if (purpose === 'registration' && !$('consent').checked) {
@@ -320,11 +378,11 @@
   $('btnStatus').addEventListener('click', showStatus);
   $('btnDelete').addEventListener('click', deletePalms);
 
-  api('GET', '/api/config').then((c) => {
-    if (!c.apiKeyConfigurada) {
+  configP.then((c) => {
+    if (c.apiKeyConfigurada === false) {
       setStatus('warn', 'Servidor sem chave', 'Defina PALM_API_KEY no arquivo .env e reinicie o backend.');
     }
-  }).catch(() => {});
+  });
 })();
 </script>
 </body>

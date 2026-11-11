@@ -135,8 +135,8 @@ class TokenRequest(BaseModel):
 
 class ConfirmRequest(BaseModel):
     sessionId: str = Field(min_length=1, max_length=128)
-    userId: str
-    purpose: Literal["registration", "verification"]
+    userId: Optional[str] = None  # dispensado em "recognition" (1:N)
+    purpose: Literal["registration", "verification", "recognition"]
 
 
 class DeleteRequest(BaseModel):
@@ -202,11 +202,28 @@ async def confirm_session(req: ConfirmRequest):
     O retorno do SDK no cliente não é confiável sozinho: o sessionId é resolvido
     aqui com a api_key (GetSessionResult só aceita api_key).
     """
-    user_id = check_user_id(req.userId)
-    data = await palm_call(PATH_GET_SESSION, {"SessionId": req.sessionId})
+    if req.purpose != "recognition" and not req.userId:
+        raise HTTPException(422, "userId é obrigatório para cadastro e verificação 1:1.")
 
-    same_user = data.get("UserId") == user_id
+    data = await palm_call(PATH_GET_SESSION, {"SessionId": req.sessionId})
     search = data.get("SearchResult") or {}
+
+    if req.purpose == "recognition":
+        # 1:N — quem diz de quem é a palma é a plataforma, não o navegador.
+        is_match = bool(search.get("IsMatch"))
+        found = data.get("UserId") if is_match else None
+        return {
+            "purpose": req.purpose,
+            "confirmado": bool(found),
+            "userId": found,
+            "isMatch": is_match,
+            "score": search.get("Score"),
+            "algoritmo": search.get("AlgorithmVersion"),
+            "palma": DIRECTION_NAMES.get(data.get("PalmDirection")),
+        }
+
+    user_id = check_user_id(req.userId)
+    same_user = data.get("UserId") == user_id
     out = {
         "purpose": req.purpose,
         "usuarioConfere": same_user,

@@ -100,6 +100,24 @@ def test_verification_confirmed_only_when_user_and_match(client):
     assert nomatch["confirmado"] is False
 
 
+def test_recognition_returns_user_from_platform_without_user_id(client):
+    client.state["session"] = {
+        "UserId": "u7", "PalmId": "p", "PalmDirection": 2,
+        "SearchResult": {"IsMatch": True, "Score": 95, "AlgorithmVersion": "rgb_v3"},
+    }
+    r = client.post("/api/session/confirm", json={"sessionId": "s", "purpose": "recognition"}).json()
+    assert r["confirmado"] is True and r["userId"] == "u7" and r["palma"] == "right"
+
+    client.state["session"]["SearchResult"]["IsMatch"] = False
+    r = client.post("/api/session/confirm", json={"sessionId": "s", "purpose": "recognition"}).json()
+    assert r["confirmado"] is False and r["userId"] is None
+
+
+def test_verification_still_requires_user_id(client):
+    r = client.post("/api/session/confirm", json={"sessionId": "s", "purpose": "verification"})
+    assert r.status_code == 422
+
+
 def test_registration_confirm_returns_palms(client):
     client.state["session"] = {"UserId": "u1", "PalmId": "p", "PalmDirection": 2, "RegisterResult": {}}
     client.state["palms"]["u1"] = {"RightPalm": {"PalmState": 1, "PalmDirection": 2, "RegisterTime": 1}}
